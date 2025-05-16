@@ -19,6 +19,15 @@ hf_access_token = os.getenv("HF_ACCESS_TOKEN")
 
 @dataclass
 class ScriptArguments:
+    bf16: Optional[bool] = field(
+        default=False,
+        metadata={"help": "Enables bf16 training."},
+    )
+    fp16: Optional[bool] = field(
+        default=False,
+        metadata={"help": "Enables fp16 training."},
+    )
+
     dataset_name: Optional[str] = field(
         default="/AI/datasets/code_reviewer",
         metadata={"help": "The preference dataset to use."},
@@ -35,24 +44,30 @@ class ScriptArguments:
         }
     )
 
+    model_dtype: Optional[str] = field(
+        default="float32",
+        metadata={"help": "The model dtype to use. E.g. float16, bfloat16, etc."},
+    )
+
     output_dir: str = field(
         default="./results_packing",
         metadata={"help": "The output directory where the model predictions and checkpoints will be written."},
     )
 
 
-def _create_model(model_name: str):
+def _create_model(args: ScriptArguments):
     # Load the entire model on the GPU 0
     # switch to `device_map = "auto"` for multi-GPU
     device_map = {"": 0}
     model = AutoModelForCausalLM.from_pretrained(
-        model_name,
+        args.model_name,
         device_map=device_map,
+        torch_dtype=args.model_dtype,
         token=hf_access_token
     )
 
     tokenizer = AutoTokenizer.from_pretrained(
-        model_name,
+        args.model_name,
         use_fast=True,
         token=hf_access_token
     )
@@ -75,6 +90,8 @@ def _create_trainer(args, train_dataset, model, tokenizer):
 
     training_args = TrainingArguments(
         output_dir=args.output_dir,
+        fp16=args.fp16,
+        bf16=args.bf16,
     )
 
     trainer = SFTTrainer(
@@ -90,7 +107,7 @@ def _create_trainer(args, train_dataset, model, tokenizer):
 
 def main(args):
     train_dataset = load_dataset(args.dataset_name, split="train")
-    model, tokenizer = _create_model(args.model_name)
+    model, tokenizer = _create_model(args)
     trainer = _create_trainer(args, train_dataset, model, tokenizer)
 
     trainer.train()
