@@ -50,7 +50,7 @@ class ScriptArguments:
     )
 
     output_dir: str = field(
-        default="./results_packing",
+        default="./output",
         metadata={"help": "The output directory where the model predictions and checkpoints will be written."},
     )
 
