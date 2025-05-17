@@ -1,20 +1,30 @@
+import logging
 import os
 from dataclasses import dataclass, field
 from typing import Optional
 
+import torch
 from datasets import load_dataset, Dataset
 from dotenv import load_dotenv
 from peft import LoraConfig
 from transformers import (
     AutoModelForCausalLM,
     HfArgumentParser,
-    AutoTokenizer,
-    TrainingArguments
+    AutoTokenizer
 )
-from trl import SFTTrainer
+from trl import SFTTrainer, SFTConfig
+
+from helper import compute_module_sizes
 
 load_dotenv()
 hf_access_token = os.getenv("HF_ACCESS_TOKEN")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+logger = logging.getLogger("fine_tune")
 
 
 @dataclass
@@ -54,6 +64,15 @@ class ScriptArguments:
         metadata={"help": "The output directory where the model predictions and checkpoints will be written."},
     )
 
+    per_device_train_batch_size: Optional[int] = field(default=1)
+    group_by_length: bool = field(
+        default=True,
+        metadata={
+            "help": "Group sequences into batches with same length. Saves memory and speeds up training considerably."
+        },
+    )
+    max_seq_length: Optional[int] = field(default=1024)
+
 
 def _create_model(args: ScriptArguments):
     # Load the entire model on the GPU 0
@@ -62,9 +81,11 @@ def _create_model(args: ScriptArguments):
     model = AutoModelForCausalLM.from_pretrained(
         args.model,
         device_map=device_map,
-        torch_dtype=args.model_dtype,
+        torch_dtype=torch.bfloat16,
         token=hf_access_token
     )
+
+    logger.info(f"Model size: {compute_module_sizes(model)[''] / 1e9:.2f}GB")
 
     tokenizer = AutoTokenizer.from_pretrained(
         args.model,
@@ -88,10 +109,14 @@ def _create_trainer(args, train_dataset: Dataset, model, tokenizer):
         target_modules=['q_proj', 'v_proj'],
     )
 
-    training_args = TrainingArguments(
+    training_args = SFTConfig(
         output_dir=args.output_dir,
         fp16=args.fp16,
         bf16=args.bf16,
+        per_device_train_batch_size=args.per_device_train_batch_size,
+        group_by_length=args.group_by_length,
+        dataset_text_field="text",
+        max_seq_length=args.max_seq_length,
     )
 
     trainer = SFTTrainer(
@@ -111,31 +136,34 @@ def _create_gen_batches_train(args):
 
         for sample in iter(dataset):
             # Extract instruction and input from the sample
-            instruction = str(sample['instruction'])
-            input_text = str(sample['text'])
-            out_text = str(sample['target'])
-
-            if input_text is None or input_text == "":
-                formatted_prompt = (
-                    f"<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\n"
-                    f"Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\n{instruction}\n\n### Response:\n"
-                    f"<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
-                    f"{str(out_text)}"
-                    f"<|eot_id|><|end_of_text|>"
-                )
-            else:
-                formatted_prompt = (
-                    f"<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\n"
-                    f"Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\n{instruction}\n\n### Input:\n{input_text}\n\n### Response:\n"
-                    f"<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
-                    f"{str(out_text)}"
-                    f"<|eot_id|><|end_of_text|>"
-                )
-
-            formatted_prompt = "".join(formatted_prompt)
+            formatted_prompt = _get_prompt(sample)
             yield {'text': formatted_prompt}
 
     return _gen_batches_train
+
+
+def _get_prompt(sample):
+    instruction = str(sample['instruction'])
+    input_text = str(sample['text'])
+    out_text = str(sample['target'])
+    if input_text is None or input_text == "":
+        formatted_prompt = (
+            f"<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\n"
+            f"Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\n{instruction}\n\n### Response:\n"
+            f"<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
+            f"{str(out_text)}"
+            f"<|eot_id|><|end_of_text|>"
+        )
+    else:
+        formatted_prompt = (
+            f"<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\n"
+            f"Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\n{instruction}\n\n### Input:\n{input_text}\n\n### Response:\n"
+            f"<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
+            f"{str(out_text)}"
+            f"<|eot_id|><|end_of_text|>"
+        )
+
+    return "".join(formatted_prompt)
 
 
 def main(args):
