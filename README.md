@@ -38,7 +38,7 @@ This command will create the code_reviewer HF dataset.
 ### Fine-tuning
 To fine-tune a model, run the following command:
 ```sh
-python fine_tune.py --dataset_name <dataset_name>
+python fine_tune/fine_tune.py --dataset_name <dataset_name>
 ```
 
 ### Optional Arguments

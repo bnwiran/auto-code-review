@@ -2,7 +2,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Optional
 
-from datasets import load_dataset
+from datasets import load_dataset, Dataset
 from dotenv import load_dotenv
 from peft import LoraConfig
 from transformers import (
@@ -38,7 +38,7 @@ class ScriptArguments:
     lora_r: Optional[int] = field(default=8)
 
     model_name: Optional[str] = field(
-        default="meta-llama/Llama-3.2-1B",
+        default="TinyLlama/TinyLlama-1.1B-step-50K-105b",
         metadata={
             "help": "The model that you want to train from the Hugging Face hub. E.g. gpt2, gpt2-xl, bert, etc."
         }
@@ -78,7 +78,7 @@ def _create_model(args: ScriptArguments):
     return model, tokenizer
 
 
-def _create_trainer(args, train_dataset, model, tokenizer):
+def _create_trainer(args, train_dataset: Dataset, model, tokenizer):
     peft_config = LoraConfig(
         lora_alpha=args.lora_alpha,
         lora_dropout=args.lora_dropout,
@@ -105,10 +105,43 @@ def _create_trainer(args, train_dataset, model, tokenizer):
     return trainer
 
 
+def _create_gen_batches_train(args):
+    def _gen_batches_train():
+        dataset = load_dataset(args.dataset_name, streaming=True, split="train")
+
+        for sample in iter(dataset):
+            # Extract instruction and input from the sample
+            instruction = str(sample['instruction'])
+            input_text = str(sample['text'])
+            out_text = str(sample['target'])
+
+            if input_text is None or input_text == "":
+                formatted_prompt = (
+                    f"<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\n"
+                    f"Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\n{instruction}\n\n### Response:\n"
+                    f"<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
+                    f"{str(out_text)}"
+                    f"<|eot_id|><|end_of_text|>"
+                )
+            else:
+                formatted_prompt = (
+                    f"<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\n"
+                    f"Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\n{instruction}\n\n### Input:\n{input_text}\n\n### Response:\n"
+                    f"<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
+                    f"{str(out_text)}"
+                    f"<|eot_id|><|end_of_text|>"
+                )
+
+            formatted_prompt = "".join(formatted_prompt)
+            yield {'text': formatted_prompt}
+
+    return _gen_batches_train
+
+
 def main(args):
-    train_dataset = load_dataset(args.dataset_name, split="train")
+    dataset = Dataset.from_generator(_create_gen_batches_train(args))
     model, tokenizer = _create_model(args)
-    trainer = _create_trainer(args, train_dataset, model, tokenizer)
+    trainer = _create_trainer(args, dataset, model, tokenizer)
 
     trainer.train()
 
