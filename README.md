@@ -38,19 +38,23 @@ This command will create the code_reviewer HF dataset.
 ### Fine-tuning
 To fine-tune a model, run the following command:
 ```sh
-python fine_tune.py --dataset_name <dataset_name>
+python fine_tune/fine_tune.py --dataset_name <dataset_name>
 ```
 
 ### Optional Arguments
+The following optional arguments can be used to customize the fine-tuning process:
 
-| Argument         | Type     | Default Value                | Description                                                                 |
-|------------------|----------|------------------------------|-----------------------------------------------------------------------------|
-| `bf16`           | `bool`   | `False`                      | Enables bf16 training.                                                     |
-| `fp16`           | `bool`   | `False`                      | Enables fp16 training.                                                     |
-| `dataset_name`   | `str`    | `/AI/datasets/code_reviewer` | The preference dataset to use.                                             |
-| `lora_alpha`     | `int`    | `16`                         | LoRA alpha parameter.                                                      |
-| `lora_dropout`   | `float`  | `0.0`                        | LoRA dropout rate.                                                         |
-| `lora_r`         | `int`    | `8`                          | LoRA rank parameter.                                                       |
-| `model_name`     | `str`    | `meta-llama/Llama-3.2-1B`    | The model to train from the Hugging Face hub.                              |
-| `model_dtype`    | `str`    | `float32`                    | The model dtype to use (e.g., float16, bfloat16).                          |
-| `output_dir`     | `str`    | `./output`                   | The output directory for model predictions and checkpoints.                |
+| Argument                      | Type    | Default Value                            | Description                                                            |
+|-------------------------------|---------|------------------------------------------|------------------------------------------------------------------------|
+| `bf16`                        | `bool`  | `False`                                  | Enables bf16 training.                                                 |
+| `fp16`                        | `bool`  | `False`                                  | Enables fp16 training.                                                 |
+| `dataset`                     | `str`   | `/AI/datasets/code_reviewer`             | The preference dataset to use.                                         |
+| `lora_alpha`                  | `int`   | `16`                                     | LoRA alpha parameter.                                                  |
+| `lora_dropout`                | `float` | `0.0`                                    | LoRA dropout rate.                                                     |
+| `lora_r`                      | `int`   | `8`                                      | LoRA rank parameter.                                                   |
+| `model`                       | `str`   | `TinyLlama/TinyLlama-1.1B-step-50K-105b` | The model to train from the Hugging Face hub.                          |
+| `model_dtype`                 | `str`   | `float32`                                | The model dtype to use (e.g., float16, bfloat16).                      |
+| `output_dir`                  | `str`   | `./output`                               | The output directory for model predictions and checkpoints.            |
+| `per_device_train_batch_size` | `int`   | `1`                                      | Batch size per device during training.                                 |
+| `group_by_length`             | `bool`  | `True`                                   | Group sequences into batches with the same length to save memory.      |
+| `max_seq_length`              | `int`   | `1024`                                   | Maximum sequence length for training.                                  |
