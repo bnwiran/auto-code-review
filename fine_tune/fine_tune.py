@@ -37,7 +37,7 @@ class ScriptArguments:
     lora_dropout: Optional[float] = field(default=0.0)
     lora_r: Optional[int] = field(default=8)
 
-    model_name: Optional[str] = field(
+    model: Optional[str] = field(
         default="TinyLlama/TinyLlama-1.1B-step-50K-105b",
         metadata={
             "help": "The model that you want to train from the Hugging Face hub. E.g. gpt2, gpt2-xl, bert, etc."
@@ -60,14 +60,14 @@ def _create_model(args: ScriptArguments):
     # switch to `device_map = "auto"` for multi-GPU
     device_map = {"": 0}
     model = AutoModelForCausalLM.from_pretrained(
-        args.model_name,
+        args.model,
         device_map=device_map,
         torch_dtype=args.model_dtype,
         token=hf_access_token
     )
 
     tokenizer = AutoTokenizer.from_pretrained(
-        args.model_name,
+        args.model,
         use_fast=True,
         token=hf_access_token
     )

@@ -51,6 +51,6 @@ python fine_tune/fine_tune.py --dataset_name <dataset_name>
 | `lora_alpha`   | `int`    | `16`                         | LoRA alpha parameter.                                                      |
 | `lora_dropout` | `float`  | `0.0`                        | LoRA dropout rate.                                                         |
 | `lora_r`       | `int`    | `8`                          | LoRA rank parameter.                                                       |
-| `model_name`   | `str`    | `meta-llama/Llama-3.2-1B`    | The model to train from the Hugging Face hub.                              |
+| `model`        | `str`    | `meta-llama/Llama-3.2-1B`    | The model to train from the Hugging Face hub.                              |
 | `model_dtype`  | `str`    | `float32`                    | The model dtype to use (e.g., float16, bfloat16).                          |
 | `output_dir`   | `str`    | `./output`                   | The output directory for model predictions and checkpoints.                |
