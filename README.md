@@ -43,14 +43,14 @@ python fine_tune/fine_tune.py --dataset_name <dataset_name>
 
 ### Optional Arguments
 
-| Argument         | Type     | Default Value                | Description                                                                 |
-|------------------|----------|------------------------------|-----------------------------------------------------------------------------|
-| `bf16`           | `bool`   | `False`                      | Enables bf16 training.                                                     |
-| `fp16`           | `bool`   | `False`                      | Enables fp16 training.                                                     |
-| `dataset_name`   | `str`    | `/AI/datasets/code_reviewer` | The preference dataset to use.                                             |
-| `lora_alpha`     | `int`    | `16`                         | LoRA alpha parameter.                                                      |
-| `lora_dropout`   | `float`  | `0.0`                        | LoRA dropout rate.                                                         |
-| `lora_r`         | `int`    | `8`                          | LoRA rank parameter.                                                       |
-| `model_name`     | `str`    | `meta-llama/Llama-3.2-1B`    | The model to train from the Hugging Face hub.                              |
-| `model_dtype`    | `str`    | `float32`                    | The model dtype to use (e.g., float16, bfloat16).                          |
-| `output_dir`     | `str`    | `./output`                   | The output directory for model predictions and checkpoints.                |
+| Argument       | Type     | Default Value                | Description                                                                 |
+|----------------|----------|------------------------------|-----------------------------------------------------------------------------|
+| `bf16`         | `bool`   | `False`                      | Enables bf16 training.                                                     |
+| `fp16`         | `bool`   | `False`                      | Enables fp16 training.                                                     |
+| `dataset`      | `str`    | `/AI/datasets/code_reviewer` | The preference dataset to use.                                             |
+| `lora_alpha`   | `int`    | `16`                         | LoRA alpha parameter.                                                      |
+| `lora_dropout` | `float`  | `0.0`                        | LoRA dropout rate.                                                         |
+| `lora_r`       | `int`    | `8`                          | LoRA rank parameter.                                                       |
+| `model_name`   | `str`    | `meta-llama/Llama-3.2-1B`    | The model to train from the Hugging Face hub.                              |
+| `model_dtype`  | `str`    | `float32`                    | The model dtype to use (e.g., float16, bfloat16).                          |
+| `output_dir`   | `str`    | `./output`                   | The output directory for model predictions and checkpoints.                |

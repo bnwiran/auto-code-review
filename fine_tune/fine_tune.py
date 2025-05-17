@@ -28,7 +28,7 @@ class ScriptArguments:
         metadata={"help": "Enables fp16 training."},
     )
 
-    dataset_name: Optional[str] = field(
+    dataset: Optional[str] = field(
         default="/AI/datasets/code_reviewer",
         metadata={"help": "The preference dataset to use."},
     )
@@ -107,7 +107,7 @@ def _create_trainer(args, train_dataset: Dataset, model, tokenizer):
 
 def _create_gen_batches_train(args):
     def _gen_batches_train():
-        dataset = load_dataset(args.dataset_name, streaming=True, split="train")
+        dataset = load_dataset(args.dataset, streaming=True, split="train")
 
         for sample in iter(dataset):
             # Extract instruction and input from the sample
